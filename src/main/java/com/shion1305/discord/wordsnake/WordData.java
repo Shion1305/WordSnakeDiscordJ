@@ -1,9 +1,9 @@
 package com.shion1305.discord.wordsnake;
 
 public class WordData {
-    int id;
-    String word;
-    String kana;
+    public int id;
+    public String word;
+    public String kana;
 
     public WordData(int id, String word, String kana) {
         this.id = id;
