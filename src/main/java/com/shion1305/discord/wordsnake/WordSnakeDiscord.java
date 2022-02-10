@@ -4,7 +4,6 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
@@ -12,7 +11,6 @@ import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
-import discord4j.discordjson.json.EmbedData;
 import discord4j.gateway.intent.IntentSet;
 import discord4j.rest.entity.RestChannel;
 import discord4j.rest.util.Color;
@@ -24,6 +22,7 @@ import static com.shion1305.discord.wordsnake.WordCheckResult.*;
 
 public class WordSnakeDiscord {
     List<Integer> wordHistory;
+    List<Integer> banList;
     GatewayDiscordClient client;
     RestChannel channel;
     String channelId;
@@ -35,6 +34,7 @@ public class WordSnakeDiscord {
     public WordSnakeDiscord(String token, String channel) {
         channelId = channel;
         wordHistory = new ArrayList<>();
+        banList =new ArrayList<>();
         client = DiscordClient.create(token).gateway().setEnabledIntents(IntentSet.all()).login().block();
         //configure target channel
         this.channel = client.getChannelById(Snowflake.of(channel)).block().getRestChannel();
@@ -64,11 +64,12 @@ public class WordSnakeDiscord {
                                     sendNOTSATISFIED(content, messageCreateEvent.getMember().get());
                                     break;
                                 case WORD_OK:
-                                    if (wordHistory.contains(re.data.id)) {
-
+                                    if (banList.contains(re.data.id)) {
                                         //GAME OVER
+
                                     } else {
-                                        re.banList.forEach(wordData -> wordHistory.add(wordData.id));
+                                        wordHistory.add(re.data.id);
+                                        re.banList.forEach(wordData -> banList.add(wordData.id));
                                         nextHeadDeterminer(re.data.kana);
                                         sendOKNext(messageCreateEvent.getMember().get());
                                     }
@@ -175,9 +176,11 @@ public class WordSnakeDiscord {
 
     private void sendOKNext(User sender) {
         StringBuilder title = new StringBuilder();
-        for (int i = 1; i < 4 && wordHistory.size() - i > -1; i++) {
-            title.append(" > ");
-            title.append(WordSnakeChecker.getWordFromID(wordHistory.get(wordHistory.size() - i)).word);
+        for (int i = 3; i > 0; i--) {
+            if (wordHistory.size() - i > -1) {
+                title.append(" > ");
+                title.append(WordSnakeChecker.getWordFromID(wordHistory.get(wordHistory.size() - i)).word);
+            }
         }
         channel.createMessage(EmbedCreateSpec.builder()
                 .author(EmbedCreateFields.Author.of(sender.getUsername(), null, sender.getAvatarUrl()))
